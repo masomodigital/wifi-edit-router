@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>View & Edit Routers</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background: linear-gradient(135deg, #eef2f7, #dbe4f0);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+  }
+
+  .container {
+    background: #fff;
+    padding: 40px 30px;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    text-align: center;
+    width: 100%;
+    max-width: 700px;
+  }
+
+  h2 {
+    color: #333;
+    margin-bottom: 25px;
+  }
+
+  input, button {
+    width: 100%;
+    padding: 12px 15px;
+    margin: 8px 0;
+    border-radius: 8px;
+    font-size: 1rem;
+    box-sizing: border-box;
+  }
+
+  input {
+    border: 1px solid #ccc;
+    transition: border 0.3s;
+  }
+
+  input:focus {
+    border-color: #2c7be5;
+    outline: none;
+  }
+
+  button {
+    background-color: #2c7be5;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    transition: background 0.3s;
+  }
+
+  button:hover {
+    background-color: #1a5bb8;
+  }
+
+  #message {
+    font-weight: bold;
+    margin-top: 20px;
+    white-space: pre-line;
+  }
+
+  .green {
+    color: green;
+    font-weight: bold;
+  }
+
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin-top: 20px;
+  }
+
+  th, td {
+    border: 1px solid #ccc;
+    padding: 8px;
+    text-align: left;
+  }
+
+  th {
+    background: #f4f4f4;
+  }
+
+  input.table-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 6px;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h2>View & Edit Routers</h2>
+
+  <input type="text" id="sellerId" placeholder="Enter Seller ID e.g. S001">
+  <button id="loadBtn">Load Routers</button>
+
+  <div id="message"></div>
+
+  <table id="routersTable" style="display:none;">
+    <thead>
+      <tr>
+        <th>RouterID</th>
+        <th>Router IP</th>
+        <th>Username</th>
+        <th>Password</th>
+        <th>Hotspot Name</th>
+        <th>Notes</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<script>
+const WORKER_URL = "https://holy-pond-84ca.dmaundu02.workers.dev/";
+
+const sellerInput = document.getElementById('sellerId');
+const loadBtn = document.getElementById('loadBtn');
+const messageDiv = document.getElementById('message');
+const table = document.getElementById('routersTable');
+const tbody = table.querySelector('tbody');
+
+async function fetchFromWorker(action, payload={}) {
+  try {
+    const res = await fetch(WORKER_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action, ...payload })
+    });
+    return await res.json();
+  } catch (err) {
+    return { success: false, message: err.message };
+  }
+}
+
+loadBtn.addEventListener('click', async () => {
+  const sellerId = sellerInput.value.trim();
+  if (!sellerId) {
+    messageDiv.textContent = '❌ Please enter Seller ID';
+    messageDiv.className = "";
+    table.style.display = 'none';
+    return;
+  }
+
+  messageDiv.textContent = '⏳ Loading routers...';
+  messageDiv.className = "green";
+  tbody.innerHTML = '';
+  table.style.display = 'none';
+
+  const res = await fetchFromWorker("getSellerRouters", { sellerId });
+  if (!res.success) {
+    messageDiv.textContent = '❌ ' + res.message;
+    messageDiv.className = "";
+    return;
+  }
+
+  messageDiv.textContent = `👋 Welcome, ${res.sellerName}`;
+  messageDiv.className = "green";
+
+  const routers = res.routers;
+  tbody.innerHTML = '';
+  if (!routers || routers.length === 0) {
+    messageDiv.textContent += "\nYou have no routers.";
+    table.style.display = 'none';
+    return;
+  }
+
+  routers.forEach(r => {
+    const tr = document.createElement('tr');
+
+    const tdId = document.createElement('td');
+    tdId.textContent = r[0];
+    tr.appendChild(tdId);
+
+    ['RouterIP','Username','Password','HotspotName','Notes'].forEach((field, i) => {
+      const td = document.createElement('td');
+      const input = document.createElement('input');
+      input.value = r[i+2];
+      input.className = 'table-input';
+      input.addEventListener('change', async () => {
+        messageDiv.textContent = '⏳ Updating...';
+        messageDiv.className = "green";
+        const updateRes = await fetchFromWorker("updateRouter", { routerId: r[0], field, value: input.value });
+        messageDiv.textContent = updateRes.success ? "✅ Updated" : "❌ " + updateRes.message;
+        messageDiv.className = updateRes.success ? "green" : "";
+      });
+      td.appendChild(input);
+      tr.appendChild(td);
+    });
+
+    tbody.appendChild(tr);
+  });
+
+  table.style.display = 'table';
+});
+</script>
+</body>
+</html>
