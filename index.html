@@ -73,10 +73,14 @@
     font-weight: bold;
   }
 
+  .table-wrapper {
+    overflow-x: auto; /* horizontal scroll on small screens */
+    margin-top: 20px;
+  }
+
   table {
     border-collapse: collapse;
     width: 100%;
-    margin-top: 20px;
   }
 
   th, td {
@@ -105,19 +109,21 @@
 
   <div id="message"></div>
 
-  <table id="routersTable" style="display:none;">
-    <thead>
-      <tr>
-        <th>RouterID</th>
-        <th>Router IP</th>
-        <th>Username</th>
-        <th>Password</th>
-        <th>Hotspot Name</th>
-        <th>Notes</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+  <div class="table-wrapper">
+    <table id="routersTable" style="display:none;">
+      <thead>
+        <tr>
+          <th>RouterID</th>
+          <th>Router IP</th>
+          <th>Username</th>
+          <th>Password</th>
+          <th>Hotspot Name</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
 </div>
 
 <script>
